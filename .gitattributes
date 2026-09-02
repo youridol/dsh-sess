@@ -1,0 +1,4 @@
+# Normalize line endings in the repository (CRLF-free diffs on Windows).
+* text=auto eol=lf
+
+# Generated/ignored outputs are not committed; no binary rules needed here.
