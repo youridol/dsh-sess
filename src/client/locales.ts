@@ -48,7 +48,7 @@ const zh = {
   'error.title-invalid': '标题不被接受：{message}',
   'error.service-unavailable': '当前部署缺少所需服务：{message}',
   'error.bad-request': '请求无效：{message}',
-  'error.internal': '删除失败：{message}',
+  'error.internal': '操作失败：{message}',
 } as const
 
 /** Dictionary type for one namespace: every zh key. */
@@ -96,7 +96,7 @@ const en: Record<DshSessKey, string> = {
   'error.title-invalid': 'Title rejected: {message}',
   'error.service-unavailable': 'A required service is missing in this deployment: {message}',
   'error.bad-request': 'Invalid request: {message}',
-  'error.internal': 'Deletion failed: {message}',
+  'error.internal': 'Operation failed: {message}',
 }
 
 export type DshSessDicts = {

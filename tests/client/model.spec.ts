@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import { dictionaries } from '../../src/client/locales.ts'
 import { archivedRows, deriveSessionRows, relativeTime } from '../../src/client/model.ts'
-import type { SessionListState, WorkspaceListState } from '../../src/client/types.ts'
+import type { SessionListState, SessionSummaryView, WorkspaceListState } from '../../src/client/types.ts'
 
 describe('locale dictionaries', () => {
   it('carries identical zh/en key sets', () => {
@@ -28,18 +28,18 @@ describe('locale dictionaries', () => {
 })
 
 function snapshot(options: {
-  sessions?: Array<Record<string, unknown> & { id: string; updatedAt: number }>
+  sessions?: Array<SessionSummaryView & { id: string; updatedAt: number }>
   archived?: string[]
   memberships?: Array<{ workspaceId: string; title: string; sessionIds: string[] }>
 }): { sessions: SessionListState; workspaces: WorkspaceListState } {
-  const byId: Record<string, never> = {}
   const ids: string[] = []
+  const byId: Record<string, SessionSummaryView> = {}
   for (const session of options.sessions ?? []) {
     ids.push(session.id)
-    byId[session.id] = session as never
+    byId[session.id] = session
   }
   return {
-    sessions: { ids, byId: byId as unknown as SessionListState['byId'], phase: 'ready' },
+    sessions: { ids, byId, phase: 'ready' },
     workspaces: {
       items: (options.memberships ?? []).map(membership => ({
         workspaceId: membership.workspaceId,
