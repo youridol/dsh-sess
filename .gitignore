@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+lib/
+client/
+
+# Reference material used during the migration (not part of the repository)
+_ref/
+
+# Test coverage
+coverage/
+
+# Editor / OS
+.vscode/
+.idea/
+*.tsbuildinfo
+*.log
+.DS_Store
+Thumbs.db
+
+# Local npm artifacts
+*.tgz

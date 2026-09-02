@@ -1,0 +1,92 @@
+{
+  "name": "dsh-sess",
+  "version": "0.2.0",
+  "description": "Session manager for DeepSeek Harness (DSH): permanently delete cold sessions and manage archived sessions (list / rename / delete) through a native web UI. Built strictly on the official dsh-v0.1.2-alpha.5 API, Profile Bundle and Cordis mechanisms. · DeepSeek Harness 会话管理插件：冷会话永久删除、归档会话管理（列表 / 重命名 / 删除），原生 Web UI，严格基于 dsh-v0.1.2-alpha.5 官方 API、Profile Bundle 与 Cordis。",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "license": "MIT",
+  "author": "youridol",
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "session",
+    "session-management",
+    "会话管理"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/youridol/dsh-sess.git"
+  },
+  "bugs": {
+    "url": "https://github.com/youridol/dsh-sess/issues"
+  },
+  "homepage": "https://github.com/youridol/dsh-sess#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "lib",
+    "client",
+    "src",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:host && npm run build:client",
+    "build:host": "tsc -p tsconfig.host.json",
+    "build:client": "node scripts/build-client.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json && tsc --noEmit -p tsconfig.tests.json",
+    "lint": "oxlint --config .oxlintrc.json src tests scripts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm run build && npm test",
+    "prepack": "npm run build"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.2-alpha.5",
+    "@deepseek-ai/dsh-session": "0.1.2-alpha.5",
+    "@types/node": "^24.0.0",
+    "@types/react": "~18.3.1",
+    "@types/react-dom": "~18.3.1",
+    "esbuild": "^0.25.0",
+    "oxlint": "^0.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "~5.7.2",
+    "vitest": "^3.2.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  }
+}
