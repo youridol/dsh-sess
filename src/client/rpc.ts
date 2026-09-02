@@ -1,0 +1,57 @@
+/**
+ * Client-side RPC access to the dsh-sess host channel.
+ *
+ * All plugin operations travel over the private `/dsh-sess` channel (the
+ * shared `/api` channel is owned by the official api gateway). Failures come
+ * back as the standard envelope and surface as {@link RpcBusinessError} with a
+ * stable code; the UI maps codes to localized copy.
+ */
+import type { RpcCaller } from './types.ts'
+
+/** The dsh-sess channel (must match the host `SESS_CHANNEL`). */
+export const SESS_CHANNEL = '/dsh-sess'
+
+/** Host endpoint names. */
+export const Endpoints = {
+  deleteSession: 'dshSess.deleteSession',
+  renameSession: 'dshSess.renameSession',
+} as const
+
+/** A business failure returned by the host. */
+export class RpcBusinessError extends Error {
+  override readonly name = 'RpcBusinessError'
+
+  constructor(
+    readonly code: string,
+    message: string,
+    readonly details: Readonly<Record<string, unknown>> = {},
+  ) {
+    super(message)
+  }
+}
+
+/** Invoke one dsh-sess endpoint and unwrap the envelope. */
+export async function callSessionEndpoint<T>(
+  rpc: RpcCaller,
+  endpoint: string,
+  payload: Record<string, unknown>,
+  signal?: AbortSignal,
+): Promise<T> {
+  const result = await rpc.call(SESS_CHANNEL, endpoint, payload, signal)
+  if (!result.ok) {
+    throw new RpcBusinessError(result.error.code, result.error.message, result.error.details)
+  }
+  return result.value as T
+}
+
+/** Permanently delete one session; resolves to the deleted session id. */
+export async function deleteSessionRpc(rpc: RpcCaller, sessionId: string): Promise<string> {
+  const value = await callSessionEndpoint<{ deleted: string }>(rpc, Endpoints.deleteSession, { sessionId })
+  return value.deleted
+}
+
+/** Rename one session through the host; resolves to the accepted title. */
+export async function renameSessionRpc(rpc: RpcCaller, sessionId: string, title: string): Promise<string> {
+  const value = await callSessionEndpoint<{ title: string }>(rpc, Endpoints.renameSession, { sessionId, title })
+  return value.title
+}

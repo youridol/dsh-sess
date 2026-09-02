@@ -1,15 +1,15 @@
 # Dependencies
-node_modules/
+/node_modules/
 
 # Build output
-lib/
-client/
+/lib/
+/client/
 
 # Reference material used during the migration (not part of the repository)
-_ref/
+/_ref/
 
 # Test coverage
-coverage/
+/coverage/
 
 # Editor / OS
 .vscode/

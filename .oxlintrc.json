@@ -8,8 +8,7 @@
   "ignorePatterns": [
     "node_modules/**",
     "lib/**",
-    "client/**",
-    "_ref/**",
-    "coverage/**"
+    "coverage/**",
+    "_ref/**"
   ]
 }
