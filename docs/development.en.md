@@ -81,7 +81,10 @@ Constraints that keep the plugin aligned with the target version:
 
 - Runtime module imports must stay within the baseline platform words; the
   esbuild script (`scripts/build-client.mjs`) lists them as `external`. Keep
-  that list in sync with `src/client` imports.
+  that list in sync with `src/client` imports. The script compiles JSX with
+  `jsx: 'automatic'` to match the sources' `react-jsx` tsconfig setting — do
+  not switch back to transform mode, which would emit `React.createElement`
+  calls without a React import and crash every rendered entry.
 - Type against the *structural faces* in `types.ts` (the client bundle may not
   import the full client packages at runtime). `@deepseek-ai/dsh-client-ui-primitives`
   is the one real UI dependency (baseline).

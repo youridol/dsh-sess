@@ -74,7 +74,10 @@ scripts/build-client.mjs    esbuild 客户端 bundle（模块表外置）
 ## 5. 修改浏览器端
 
 - 运行时模块导入必须限于基线平台词；esbuild 脚本（`scripts/build-client.mjs`）
-  把它们列为 `external`，需与 `src/client` 的导入保持同步。
+  把它们列为 `external`，需与 `src/client` 的导入保持同步。脚本以
+  `jsx: 'automatic'` 编译 JSX（与源码 `react-jsx` 的 tsconfig 设置一致）——
+  切勿改回 transform 模式，否则产物会生成无 React 导入的
+  `React.createElement` 调用并导致所有渲染条目崩溃。
 - 用 `types.ts` 的**结构面**写类型（客户端 bundle 运行时不得导入完整客户端包）；
   唯一真实 UI 依赖是 `@deepseek-ai/dsh-client-ui-primitives`（基线词）。
 - 所有可见文案都在 `locales.ts`；`zh` 与 `en` 一起加键（有测试强制键集一致）。

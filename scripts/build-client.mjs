@@ -28,6 +28,11 @@ await build({
   format: 'cjs',
   platform: 'browser',
   target: ['es2022'],
+  // The sources use the automatic JSX runtime (tsconfig jsx: react-jsx), so
+  // esbuild must compile JSX to react/jsx-runtime calls instead of the default
+  // transform mode's React.createElement — the bundle never imports React by
+  // value and would otherwise crash with "React is not defined".
+  jsx: 'automatic',
   external: EXTERNALS,
   sourcemap: true,
   define: {

@@ -42,6 +42,14 @@ dsh-v0.1.2-alpha.5 官方 API、Profile Bundle 与 Cordis 机制实现。
   文案是纯模块，带 Node 测试。Typecheck、lint、build 与全部测试通过。
 - 代码与文档中无 TODO、占位符、兼容垫片或版本分支。
 
+### 修复
+
+- **设置中的会话管理分区内容为空。** esbuild 客户端构建未开启 automatic JSX
+  runtime，产物生成 `React.createElement` 调用却未导入 React，导致
+  `settings.section` 条目崩溃（`ReferenceError: React is not defined`）——
+  分区标签可见但内容为空。现构建已设置 `jsx: 'automatic'`，产物改为调用
+  `react/jsx-runtime`（基线模块表词），管理页完整渲染。
+
 ### 说明
 
 - 旧开发线（v0.1.x：面向旧版 dsh UI 的侧边栏行菜单注入、基于私有 `/dsh-sess`

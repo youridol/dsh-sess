@@ -51,6 +51,16 @@ dsh-v0.1.2-alpha.5 official API, Profile Bundle and Cordis mechanisms.
 - No TODO, placeholder, compatibility shim, or version branch anywhere in the
   codebase or documentation.
 
+### Fixed
+
+- **Client section rendered empty in the Settings dialog.** The esbuild client
+  build did not enable the automatic JSX runtime, so the bundle emitted
+  `React.createElement` calls without importing React, crashing the
+  `settings.section` entry (`ReferenceError: React is not defined`) and leaving
+  the section label visible with no content. The build now sets
+  `jsx: 'automatic'`, emitting `react/jsx-runtime` calls (the baseline module
+  table word), and the manager page renders its full content.
+
 ### Notes
 
 - The previous line of development (v0.1.x, sidebar row-menu injection on the
