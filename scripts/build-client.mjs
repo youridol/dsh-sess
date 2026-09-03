@@ -18,6 +18,7 @@ const PLUGIN_ID = 'dsh-sess'
 const EXTERNALS = [
   'react',
   'react/jsx-runtime',
+  'react-dom/client',
   '@deepseek-ai/dsh-client-ui-primitives',
 ]
 

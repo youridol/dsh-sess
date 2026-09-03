@@ -23,7 +23,9 @@ covers exactly those two gaps:
 1. **Delete a session permanently** — removes the session log artifact and its
    workspace accounting. Guarded: only *cold* sessions (not open in the running
    process) can be deleted, so a live session is never deleted underneath its
-   agent.
+   agent. Reachable from the **Session Manager** settings page and directly
+   from each sidebar session row: its ellipsis menu gains a **Delete session**
+   entry below **Archive** (with the same confirmation flow).
 2. **Archive manager** — list archived sessions (title, workspace, activity
    time), **rename** them, or **delete** them, all from one surface.
 
@@ -33,7 +35,7 @@ covers exactly those two gaps:
 | --- | --- | --- |
 | Session list / query / current state | Session Manager "All sessions" tab | Mirrors the sidebar projection (titles, activity time, workspace, running/blank flags). |
 | Session identification, names & metadata | Session Manager | Shows durable titles (falling back to the id), workspace membership, archive state, activity time. |
-| Permanent session deletion | Session Manager | Only cold sessions; refuses `agent-busy` sessions with a clear message. |
+| Permanent session deletion | Session Manager + sidebar row menu | Every session row's ellipsis menu gains **Delete session** below **Archive**. Only cold sessions; refuses `agent-busy` sessions with a clear message. |
 | Archived-session management | Session Manager "Archived" tab | List, inline rename (official `session/rename` path), delete. |
 | Session persistence, reads & restart recovery | Host operations | Existence checks go through official `ctx.sessionPersistence.list()`; artifact removal through official `locate()`. After a DSH restart every session is cold and deletable. |
 | Association of sessions with workspaces | Session Manager | Workspace title shown from the client workspace projection; deletion releases accounting through the official `workspaceRegistry` detach API. |
@@ -117,6 +119,12 @@ These limits come from the official API surface, not from the plugin:
 - **Deleting a session that was renamed** makes it live again (renaming
   resolves/resumes the session through the official controller, matching native
   behavior), so delete it only after it goes cold.
+- **Sidebar row-menu extension is DOM-level and defensive.** Native session-row
+  menus expose no third-party slot, so the "Delete session" entry is injected
+  structurally below the Archive item. It only appears on genuine session menus,
+  and the session id is resolved from the row's React fiber — when the id
+  cannot be proven the entry is skipped rather than guessing (this also means a
+  future ui-workspace redesign may drop the entry until adapted).
 
 ## Project layout
 
@@ -130,8 +138,13 @@ src/host/                    Host operations (official services only)
   session-id.ts              Session-id validation
   errors.ts                  Stable error codes / wire errors
 src/client/                  Browser half (official client services + slots)
-  index.tsx                  Plugin entry; registers Settings section
+  index.tsx                  Plugin entry; registers Settings section + row menu
   session-manager.tsx        Manager UI
+  row-menu.ts                Session-row menu injection (below Archive)
+  fiber-id.ts                Defensive session-id resolution (React fiber)
+  row-delete.tsx             Row-menu confirmation host (Modal)
+  row-store.ts               Row delete request store
+  delete-flow.ts             Shared error copy for delete/rename
   model.ts                   Pure row projection (unit-tested)
   rpc.ts                     Client RPC helpers
   locales.ts                 zh/en copy

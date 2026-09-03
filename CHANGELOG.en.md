@@ -51,6 +51,17 @@ dsh-v0.1.2-alpha.5 official API, Profile Bundle and Cordis mechanisms.
 - No TODO, placeholder, compatibility shim, or version branch anywhere in the
   codebase or documentation.
 
+### Added
+
+- **Sidebar session-row menu entry.** Every session row's ellipsis menu gains a
+  **Delete session** entry directly below the native **Archive** row. The
+  native menu has no third-party slot, so the entry is a defensive DOM-level
+  extension (structural matching, idempotent, marker-guarded): the session id
+  is resolved from the row's React fiber and never from visible text, and the
+  entry silently disappears whenever the row shape cannot be proven. Selecting
+  it opens the plugin-owned confirmation modal and runs the same host delete
+  path as the Session Manager page.
+
 ### Fixed
 
 - **Client section rendered empty in the Settings dialog.** The esbuild client

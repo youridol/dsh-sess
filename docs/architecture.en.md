@@ -136,7 +136,32 @@ Destructive actions call the host channel; afterwards the plugin awaits
 `ctx.sessions.refresh()` and lets the workspace follow-stream settle the rest
 (see *Boundaries* in the README).
 
-## 6. Non-goals and deliberate omissions
+## 6. Sidebar session-row menu ("Delete session")
+
+The native session-row ellipsis menu (ui-workspace) renders a closed component
+list (rename / fork / archive) with no third-party slot, so dsh-sess extends it
+at the DOM level, strictly for its own affordance:
+
+- a capture-phase listener records when a session row's ellipsis is opened;
+- a MutationObserver then extends the portaled `role="menu"` — only when the
+  menu genuinely carries an **Archive** row — by cloning that row and inserting
+  a **Delete session** entry directly after it (identical hashed classes, a
+  danger-tinted trash icon, localized label);
+- selecting the entry closes the native menu and opens the plugin-owned
+  confirmation modal (`row-delete.tsx`), which runs the exact host delete path
+  the Settings page uses;
+- the session id is resolved from the row's React fiber
+  (`memoizedProps.node.id`, validated against the host charset). If the id
+  cannot be proven the entry is skipped — visible text is never trusted for a
+  destructive action.
+
+This is a UI-layer extension of another package's component tree, so it is kept
+deliberately defensive and documented: structural matching only (bilingual
+archive label), idempotent per menu open, marker-attr guarded, and inert on any
+unknown shape (a future ui-workspace redesign may drop the entry until adapted).
+The destructive operation itself still goes through the official host services.
+
+## 7. Non-goals and deliberate omissions
 
 - **No unarchive.** The official archive set is one-way; restoring would require
   writing workspace domain state, which is forbidden. Rename/delete cover the
@@ -146,10 +171,8 @@ Destructive actions call the host channel; afterwards the plugin awaits
   deletion, archived management).
 - **No direct persistence writes.** Appends, titles and recovery all stay inside
   official services.
-- **No DOM-level UI integration.** Row menus are owned by other packages and
-  expose no slot; the plugin deliberately does not mutate them.
 
-## 7. Testability
+## 8. Testability
 
 Host operations accept structural service faces, so unit tests fake the
 official services and use real temp directories as the persistence tree; the

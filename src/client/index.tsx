@@ -2,17 +2,24 @@
  * dsh-sess browser entry.
  *
  * Registers the plugin's zh/en dictionaries and contributes a Settings
- * section ("Session Manager") through the official client slots system. The
- * section renders the session manager; destructive operations (permanent
- * deletion, rename) are performed by the host half over the `/dsh-sess`
- * channel. All registrations are fiber-scoped through `ctx.effect` /
- * `ctx.slots.inject`, so they unwind with the plugin.
+ * section ("Session Manager") through the official client slots system, and —
+ * for the sidebar — extends each session row's ellipsis menu with a "Delete
+ * session" entry below the native archive item (see `row-menu.ts`). The row
+ * menu has no third-party slot, so the extension is a defensive DOM-level
+ * addition guarded by structural matching and fiber-resolved session ids;
+ * the confirmation modal is plugin-owned and uses the same host delete path
+ * as the Settings page.
  *
- * The client bundle only requires baseline platform modules at runtime
- * (react / jsx-runtime and the ui-primitives module); every other dependency
- * is type-only or inlined by the build.
+ * All registrations are fiber-scoped through `ctx.effect` / `ctx.slots.inject`
+ * and unwind with the plugin. The client bundle only requires baseline
+ * platform modules at runtime (react / jsx-runtime / react-dom client and the
+ * ui-primitives module); every other dependency is type-only or inlined.
  */
+import { createRoot, type Root } from 'react-dom/client'
 import { dictionaries } from './locales.ts'
+import { installRowDeleteMenu } from './row-menu.ts'
+import { requestRowDelete } from './row-store.ts'
+import { RowDeleteHost } from './row-delete.tsx'
 import { SessionManagerPage } from './session-manager.tsx'
 import { injectStyles } from './styles.ts'
 import type { DshSessClientContext, Translate } from './types.ts'
@@ -49,4 +56,31 @@ export function apply(ctx: DshSessClientContext): void {
     locale: NS,
     inject: () => ({ t }),
   }, () => <SessionManagerPage ctx={ctx} t={t} />))
+
+  // Sidebar row-menu extension + its confirmation host (own React root).
+  let host: HTMLElement | null = null
+  let root: Root | null = null
+  const mountRowHost = (): void => {
+    if (host !== null || typeof document === 'undefined') return
+    if (document.body === null) return
+    host = document.createElement('div')
+    host.id = 'dsh-sess-row-host'
+    document.body.appendChild(host)
+    root = createRoot(host)
+    root.render(<RowDeleteHost ctx={ctx} t={t} />)
+  }
+  ctx.effect(() => {
+    mountRowHost()
+    return () => {
+      root?.unmount()
+      host?.remove()
+      host = null
+      root = null
+    }
+  }, 'dsh-sess: row delete host')
+
+  ctx.effect(() => installRowDeleteMenu({
+    onRequest: requestRowDelete,
+    deleteLabel: () => t('row.delete'),
+  }), 'dsh-sess: row menu injector')
 }

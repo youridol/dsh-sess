@@ -7,13 +7,14 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { describeFailure } from './delete-flow.ts'
 import {
   archivedRows,
   deriveSessionRows,
   relativeTime,
   type SessionRowView,
 } from './model.ts'
-import { deleteSessionRpc, renameSessionRpc, RpcBusinessError } from './rpc.ts'
+import { deleteSessionRpc, renameSessionRpc } from './rpc.ts'
 import type { DshSessClientContext, Translate } from './types.ts'
 
 /** Manager tab. */
@@ -23,29 +24,6 @@ type Mode = 'all' | 'archived'
 interface Notice {
   readonly kind: 'ok' | 'error'
   readonly text: string
-}
-
-/** Codes with dedicated localized copy; anything else shows the host message. */
-const KNOWN_ERROR_CODES = new Set([
-  'agent-busy',
-  'session-not-found',
-  'title-invalid',
-  'service-unavailable',
-  'bad-request',
-  'internal',
-])
-
-/** Map a failed operation to localized copy. */
-function describeFailure(
-  error: unknown,
-  t: Translate,
-  title: string,
-): string {
-  if (error instanceof RpcBusinessError && KNOWN_ERROR_CODES.has(error.code)) {
-    return t(`error.${error.code}`, { title, message: error.message })
-  }
-  if (error instanceof RpcBusinessError) return error.message
-  return error instanceof Error ? error.message : String(error)
 }
 
 /** Main settings-section component. */

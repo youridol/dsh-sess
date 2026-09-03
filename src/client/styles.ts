@@ -28,6 +28,10 @@ const CSS = `
 .dsh-sess-row-confirm-title { font-size: 13px; font-weight: 600; }
 .dsh-sess-row-confirm-note { font-size: 12px; line-height: 16px; color: var(--dsw-alias-label-secondary, rgba(100,100,100,0.9)); }
 .dsh-sess-row-confirm-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.dsh-sess-row-confirm-error { font-size: 12px; line-height: 16px; color: var(--dsw-alias-state-danger-primary, #c62828); }
+/* Injected session-row menu entry (danger affordance). */
+.dsh-sess-menu-danger { color: var(--dsw-alias-state-danger-primary, #c62828); }
+.dsh-sess-menu-danger:hover { color: var(--dsw-alias-state-danger-primary, #c62828); }
 `
 
 /** Inject the stylesheet once; returns a disposer that removes the tag. */
