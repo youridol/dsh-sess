@@ -22,7 +22,7 @@ pure and runs under Node.
 | --- | --- |
 | `assertSessionId` | accepts harness-style ids; rejects empty/non-string/separable/`.`/`..`/`~`/oversized values with `bad-request` |
 | `removeSessionArtifact` | removes the owning directory for a valid shape; no-op without a location; refuses non-`jsonl` kinds, directory/id mismatches, unexpected artifact names, non-absolute paths — nothing is removed on refusal |
-| `deleteSession` | refuses live sessions (`agent-busy`) without touching accounting; `session-not-found` for unknown sessions; deletes the artifact directory **and** releases accounting only for member workspaces; no-op artifact removal still releases accounting; `service-unavailable` for non-jsonl backends; `bad-request` before any service call for malformed ids |
+| `deleteSession` | refuses live sessions (`agent-busy`) without touching accounting; refuses agent-retained idle sessions with `reason: 'idle'` diagnostics; refuses running sessions naming the running state; `session-not-found` for unknown sessions; deletes the artifact directory **and** releases accounting only for member workspaces; no-op artifact removal still releases accounting; `service-unavailable` for non-jsonl backends; `bad-request` before any service call for malformed ids |
 | `renameSession` | succeeds through the official controller (trimmed title); maps `session/title-invalid`; clear failure when the controller is not mounted; rejects empty/non-string titles |
 | channel handler | envelopes business failures (`{ok:false, error:{code,message,details}}`); unknown endpoints → `bad-request`; stable channel name `/dsh-sess` |
 
@@ -37,6 +37,7 @@ that guards pass/fail against real paths.
 | locale dictionaries | `zh` and `en` key sets are identical; no empty or placeholder copy |
 | `deriveSessionRows` | derives titles/workspace titles/archive/blank/running flags; skips subagent children (`parentId`/`origin`); falls back to the id; orders newest-first |
 | `archivedRows` | keeps only archived rows in projection order |
+| `groupByWorkspace` | groups by workspace with ungrouped last and alphabetical group order; preserves row order inside each group |
 | `relativeTime` | Intl-backed compact times for seconds/minutes/hours/days and "now" |
 
 ## 3. Coverage guidance

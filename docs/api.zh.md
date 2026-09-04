@@ -81,13 +81,16 @@
 | --- | --- | --- |
 | `bad-request` | 载荷非法（id/标题形态） | 可选 `{ sessionId }` |
 | `session-not-found` | 不存在该 id 的持久化会话 | `{ sessionId }` |
-| `agent-busy` | 会话在本进程打开，拒绝删除 | `{ sessionId }` |
+| `agent-busy` | 会话仍被本进程保留，拒绝删除 | `{ sessionId, reason?: 'idle'\|'running', retained?: 'session' }` |
 | `title-invalid` | 官方 controller 拒绝该标题 | `{ sessionId }` |
 | `service-unavailable` | 所需官方服务未挂载 | `{ reason }` |
 | `internal` | 意外失败（message 含细节） | `{}` |
 
 浏览器端把每个 code 映射为本地化文案（dsh-sess 字典中的 `error.<code>`）；
-未知 code 原样展示宿主 message。
+`agent-busy` 依据诊断细分：`reason: 'running'` 用“运行中”文案，其它用
+“仍被保留”文案并附上宿主看到的精确 sessionId。删除浏览器当前查看的会话会在
+发起 RPC 前由客户端直接拒绝（宿主无从得知浏览器当前会话）。未知 code 原样展示
+宿主 message。
 
 ## 5. 宿主端消费的官方服务
 

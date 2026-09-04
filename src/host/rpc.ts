@@ -16,6 +16,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import {
   deleteSession,
+  type AgentRegistryFace,
   type DeleteSessionHost,
   type LiveSessionFace,
   type PersistenceFace,
@@ -76,6 +77,7 @@ export function resolveSessHost(ctx: Context): SessHost {
   const persistence = ctx.get('sessionPersistence') as PersistenceFace | undefined
   const workspaceRegistry = ctx.get('workspaceRegistry') as WorkspaceRegistryFace | undefined
   const sessionController = ctx.get('sessionController') as SessionControllerFace | undefined
+  const agents = ctx.get('agents') as AgentRegistryFace | undefined
   if (sessions === undefined || persistence === undefined || workspaceRegistry === undefined) {
     const missing = [
       sessions === undefined ? 'sessions' : null,
@@ -88,7 +90,7 @@ export function resolveSessHost(ctx: Context): SessHost {
       { reason: missing.join(',') },
     )
   }
-  return { sessions, persistence, workspaceRegistry, sessionController }
+  return { sessions, persistence, workspaceRegistry, sessionController, agents }
 }
 
 /**

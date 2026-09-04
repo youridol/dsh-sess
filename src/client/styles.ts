@@ -8,7 +8,7 @@
 export const STYLE_ID = 'dsh-sess-styles'
 
 const CSS = `
-.dsh-sess-manager { display: flex; flex-direction: column; gap: 10px; min-height: 120px; }
+.dsh-sess-manager { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
 .dsh-sess-manager-tabs { display: flex; gap: 6px; }
 .dsh-sess-manager-summary { font-size: 12px; line-height: 16px; color: var(--dsw-alias-label-tertiary, rgba(120,120,120,0.9)); }
 .dsh-sess-notice { font-size: 12px; line-height: 16px; border-radius: 6px; padding: 6px 8px; }
@@ -16,7 +16,10 @@ const CSS = `
 .dsh-sess-notice-error { color: var(--dsw-alias-state-danger-primary, #c62828); background: rgba(198,40,40,0.06); }
 .dsh-sess-manager-empty { display: flex; flex-direction: column; gap: 4px; color: var(--dsw-alias-label-tertiary, rgba(120,120,120,0.9)); font-size: 13px; padding: 18px 2px; }
 .dsh-sess-manager-empty-hint { font-size: 12px; opacity: 0.85; }
-.dsh-sess-manager-list { display: flex; flex-direction: column; max-height: min(46vh, 480px); overflow-y: auto; gap: 4px; }
+.dsh-sess-manager-list { display: flex; flex-direction: column; max-height: min(52vh, 560px); overflow-y: auto; gap: 10px; }
+.dsh-sess-manager-group { display: flex; flex-direction: column; gap: 2px; }
+.dsh-sess-manager-group-header { display: flex; align-items: center; gap: 6px; padding: 2px 10px 4px; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--dsw-alias-label-secondary, rgba(100,100,100,0.9)); }
+.dsh-sess-manager-group-count { font-size: 11px; font-weight: 400; color: var(--dsw-alias-label-tertiary, rgba(120,120,120,0.9)); }
 .dsh-sess-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; }
 .dsh-sess-row:hover { background: var(--dsw-alias-surface-hover, rgba(128,128,128,0.08)); }
 .dsh-sess-row-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }

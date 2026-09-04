@@ -21,7 +21,7 @@ npm run check       # 全量门禁：lint + typecheck + build + tests
 | --- | --- |
 | `assertSessionId` | 接受 harness 风格 id；以 `bad-request` 拒绝空值/非字符串/分隔符/`.`/`..`/`~`/超长值 |
 | `removeSessionArtifact` | 对合法形态删除所属目录；无 location 时为空操作；拒绝非 `jsonl` 种类、目录与 id 不符、异常产物名、非绝对路径——拒绝时不删任何文件 |
-| `deleteSession` | 拒绝 live 会话（`agent-busy`）且不触碰记账；未知会话 `session-not-found`；删除产物目录**并**仅对成员工作区解除记账；无产物可删时仍解除记账；非 jsonl 后端 `service-unavailable`；非法 id 在任何服务调用前即 `bad-request` |
+| `deleteSession` | 拒绝 live 会话（`agent-busy`）且不触碰记账；拒绝 agent 保留的空闲会话并带 `reason: 'idle'` 诊断；拒绝运行中会话并点名 running 状态；未知会话 `session-not-found`；删除产物目录**并**仅对成员工作区解除记账；无产物可删时仍解除记账；非 jsonl 后端 `service-unavailable`；非法 id 在任何服务调用前即 `bad-request` |
 | `renameSession` | 经官方 controller 成功（trim 标题）；映射 `session/title-invalid`；controller 未挂载时给出清晰失败；拒绝空/非字符串标题 |
 | 通道处理器 | 业务失败按标准信封包装（`{ok:false, error:{code,message,details}}`）；未知端点 → `bad-request`；通道名稳定为 `/dsh-sess` |
 
@@ -35,6 +35,7 @@ npm run check       # 全量门禁：lint + typecheck + build + tests
 | locale 字典 | `zh` 与 `en` 键集完全一致；无空文案、无占位符 |
 | `deriveSessionRows` | 派生标题/工作区标题/归档/空白/运行标志；跳过子 agent（`parentId`/`origin`）；回退 id；最新在前排序 |
 | `archivedRows` | 只保留归档行并按投影序 |
+| `groupByWorkspace` | 按工作区分组，未分组在最后、组名按字母序；组内保持行序 |
 | `relativeTime` | 基于 Intl 的秒/分钟/小时/天紧凑时间与「现在」 |
 
 ## 3. 覆盖指引

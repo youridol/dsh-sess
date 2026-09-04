@@ -87,13 +87,18 @@ path encoder. `~` is rejected because the encoder escapes it.
 | --- | --- | --- |
 | `bad-request` | invalid payload (id/title shape) | optional `{ sessionId }` |
 | `session-not-found` | no stored session with that id | `{ sessionId }` |
-| `agent-busy` | session is open in this process; deletion refused | `{ sessionId }` |
+| `agent-busy` | session is retained by this process; deletion refused | `{ sessionId, reason?: 'idle'\|'running', retained?: 'session' }` |
 | `title-invalid` | official controller rejected the title | `{ sessionId }` |
 | `service-unavailable` | required official service not mounted | `{ reason }` |
 | `internal` | unexpected failure (message has details) | `{}` |
 
 The browser maps each code to localized copy (`error.<code>` in the dsh-sess
-dictionary); unknown codes surface the host message verbatim.
+dictionary); `agent-busy` is refined from the diagnostics: a `running` reason
+gets the running message, anything else gets the "retained" message including
+the exact session id the host saw. Unknown codes surface the host message
+verbatim. Deleting the session currently viewed in the browser is refused
+client-side before any RPC (the host cannot know the browser's current
+session).
 
 ## 5. Official services the host half consumes
 

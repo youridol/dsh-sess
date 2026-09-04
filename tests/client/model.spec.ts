@@ -4,7 +4,12 @@
  */
 import { describe, expect, it } from 'vitest'
 import { dictionaries } from '../../src/client/locales.ts'
-import { archivedRows, deriveSessionRows, relativeTime } from '../../src/client/model.ts'
+import {
+  archivedRows,
+  deriveSessionRows,
+  groupByWorkspace,
+  relativeTime,
+} from '../../src/client/model.ts'
 import type { SessionListState, SessionSummaryView, WorkspaceListState } from '../../src/client/types.ts'
 
 describe('locale dictionaries', () => {
@@ -109,6 +114,39 @@ describe('archivedRows', () => {
     const rows = deriveSessionRows(sessions, workspaces)
     const archived = archivedRows(rows)
     expect(archived.map(row => row.sessionId)).toEqual(['session-c', 'session-b'])
+  })
+})
+
+function groupingRow(id: string, workspaceTitle?: string) {
+  return {
+    sessionId: id,
+    title: id,
+    updatedAt: 1,
+    running: false,
+    blank: false,
+    archived: false,
+    ...(workspaceTitle === undefined ? {} : { workspaceTitle }),
+  }
+}
+
+describe('groupByWorkspace', () => {
+  it('groups by workspace with ungrouped last and alphabetical group order', () => {
+    const groups = groupByWorkspace(
+      [groupingRow('b', 'Beta'), groupingRow('u'), groupingRow('a', 'Alpha'), groupingRow('u2')],
+      '未分组',
+    )
+    expect(groups.map(g => g.title)).toEqual(['Alpha', 'Beta', '未分组'])
+    expect(groups[0]?.rows.map(r => r.sessionId)).toEqual(['a'])
+    expect(groups[2]?.rows.map(r => r.sessionId)).toEqual(['u', 'u2'])
+  })
+
+  it('preserves row order inside each group', () => {
+    const groups = groupByWorkspace(
+      [groupingRow('s1', 'W'), groupingRow('s2', 'W'), groupingRow('s3')],
+      'ungrouped',
+    )
+    expect(groups[0]?.rows.map(r => r.sessionId)).toEqual(['s1', 's2'])
+    expect(groups[1]?.rows.map(r => r.sessionId)).toEqual(['s3'])
   })
 })
 

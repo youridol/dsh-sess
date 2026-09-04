@@ -83,11 +83,15 @@ web UI (stop `dsh web` and start it again) — the Settings page now contains a
 
 **Session Manager → All sessions**
 
-- Each row shows: title (or id), workspace (or *Ungrouped*), relative activity
-  time, and badges (`Archived`, `Cold`/blank, `Running`).
+- Sessions are grouped under their workspace (Ungrouped last), each group with
+  a header and count.
+- Each row shows: title (or id), relative activity time, and badges
+  (`Archived`, `Cold`/blank, `Running`).
 - **Delete session** asks for explicit confirmation. Deleting fails with a
-  localized message for sessions that are still open in this process
-  (`agent-busy`) or no longer present (`session-not-found`).
+  localized message for sessions retained by this process (`agent-busy`,
+  refined as running / retained-with-id) or no longer present
+  (`session-not-found`); the currently viewed session is refused before any
+  request.
 
 **Session Manager → Archived**
 

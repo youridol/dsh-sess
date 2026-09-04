@@ -61,6 +61,21 @@ dsh-v0.1.2-alpha.5 official API, Profile Bundle and Cordis mechanisms.
   entry silently disappears whenever the row shape cannot be proven. Selecting
   it opens the plugin-owned confirmation modal and runs the same host delete
   path as the Session Manager page.
+- **Workspace grouping in the Session Manager list.** Sessions are shown
+  grouped under their workspace (Ungrouped last), each group with a header and
+  per-group count, in both tabs.
+
+### Changed
+
+- **Precise busy diagnostics.** `dshSess.deleteSession` now reports whether the
+  refusing agent is `running` or merely retained (`idle`), and the UI shows
+  targeted copy: running, retained-with-session-id, or "currently viewed" (the
+  latter is refused client-side before any RPC, since the host cannot know the
+  browser's active session). Deleting a session opened earlier in this process
+  is a documented official-API limitation (no session-close API in
+  dsh-v0.1.2-alpha.5), so the message states the restart requirement exactly.
+- **Compact manager layout.** Removed the artificial bottom whitespace of the
+  Session Manager content and enlarged the scrollable list area.
 
 ### Fixed
 

@@ -44,6 +44,9 @@ const zh = {
   'status.renamedOk': '已重命名为「{title}」。',
 
   'error.agent-busy': '会话「{title}」仍在本进程打开，暂不能删除。请关闭该会话或重启 dsh（重启后所有会话变为冷会话）再删除。',
+  'error.running': '会话「{title}」正在运行中，请等它结束后再删除。',
+  'error.retained': '会话「{title}」（{sessionId}）仍被本进程保留（曾打开过）。官方当前不提供关闭会话的接口，重启 dsh 后即可删除。',
+  'error.current-session': '「{title}」是当前正在查看的会话，不能删除。请先切换到其它会话并重启 dsh 后再删除。',
   'error.session-not-found': '找不到会话「{title}」：它可能已经被删除。',
   'error.title-invalid': '标题不被接受：{message}',
   'error.service-unavailable': '当前部署缺少所需服务：{message}',
@@ -92,6 +95,9 @@ const en: Record<DshSessKey, string> = {
   'status.renamedOk': 'Renamed to "{title}".',
 
   'error.agent-busy': 'Session "{title}" is still open in this process and cannot be deleted. Close it or restart DSH (which makes every session cold) and try again.',
+  'error.running': 'Session "{title}" is running; wait for it to finish before deleting.',
+  'error.retained': 'Session "{title}" ({sessionId}) is still retained by this process (opened before). DSH currently provides no session-close API; restart DSH and delete again.',
+  'error.current-session': '"{title}" is the session you are currently viewing and cannot be deleted. Switch to another session, restart DSH, and delete again.',
   'error.session-not-found': 'Session "{title}" was not found; it may already be deleted.',
   'error.title-invalid': 'Title rejected: {message}',
   'error.service-unavailable': 'A required service is missing in this deployment: {message}',

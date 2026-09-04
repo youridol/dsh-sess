@@ -56,11 +56,18 @@ export interface WorkspaceRegistryFace {
   list(): readonly WorkspaceMembershipFace[]
 }
 
+/** The official agent registry surface dsh-sess reads (optional). */
+export interface AgentRegistryFace {
+  get(id: SessionId): { readonly status?: 'idle' | 'running' } | undefined
+}
+
 /** Minimal official-service faces the delete operation needs. */
 export interface DeleteSessionHost {
   readonly sessions: LiveSessionFace
   readonly persistence: PersistenceFace
   readonly workspaceRegistry: WorkspaceRegistryFace
+  /** Optional live agent registry used for precise busy diagnostics. */
+  readonly agents?: AgentRegistryFace | undefined
 }
 
 /** Result of a successful deletion. */
@@ -81,14 +88,26 @@ export async function deleteSession(
 ): Promise<DeleteSessionResult> {
   const sessionId = assertSessionId(rawSessionId)
 
-  // 1) Live sessions are refused: their in-memory agent and UI state would
-  // outlive the removed artifact. Closing DSH (or navigating every open
-  // session away) makes the session cold and deletion possible.
-  if (host.sessions.get(sessionId) !== undefined) {
+  // 1) Refuse sessions still bound to this process. The agent registry is the
+  // authoritative liveness source; the session store entry trails it. When an
+  // agent exists the session is retained here and deleting its durable log
+  // underneath the live in-memory state would desync (later agent teardown
+  // would rewrite the artifact). Both observations are reported so callers can
+  // distinguish "running" from "retained idle".
+  const agent = host.agents?.get(sessionId)
+  const liveSession = host.sessions.get(sessionId)
+  if (agent !== undefined || liveSession !== undefined) {
+    const status = agent?.status
     throw new SessionOpError(
       'agent-busy',
-      `session "${String(sessionId)}" is still open in this process; close it (or restart DSH) before deleting`,
-      { sessionId: String(sessionId) },
+      status === 'running'
+        ? `session "${String(sessionId)}" is running in this process; wait for it to finish before deleting`
+        : `session "${String(sessionId)}" is retained by this process${agent !== undefined ? '' : ' (session store)'}; restart DSH to make it cold, then delete`,
+      {
+        sessionId: String(sessionId),
+        ...(status !== undefined ? { reason: status } : {}),
+        ...(liveSession !== undefined ? { retained: 'session' } : {}),
+      },
     )
   }
 

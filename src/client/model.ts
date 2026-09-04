@@ -84,3 +84,39 @@ export function relativeTime(updatedAt: number, now: number, language: string): 
   if (deltaSeconds < 86400) return format.format(-Math.floor(deltaSeconds / 3600), 'hour')
   return format.format(-Math.floor(deltaSeconds / 86400), 'day')
 }
+
+/** One workspace group of visible rows. */
+export interface SessionGroup {
+  readonly key: string
+  readonly title: string
+  readonly rows: readonly SessionRowView[]
+}
+
+/**
+ * Group visible rows by workspace; the ungrouped bucket sorts last.
+ * @param rows - rows to group (already activity-sorted within groups).
+ * @param ungroupedLabel - localized label for sessions without a workspace.
+ */
+export function groupByWorkspace(
+  rows: readonly SessionRowView[],
+  ungroupedLabel: string,
+): SessionGroup[] {
+  const buckets = new Map<string, SessionRowView[]>()
+  for (const row of rows) {
+    const key = row.workspaceTitle ?? '\u0000'
+    const bucket = buckets.get(key)
+    if (bucket === undefined) buckets.set(key, [row])
+    else bucket.push(row)
+  }
+  return [...buckets.entries()]
+    .map(([key, bucket]) => ({
+      key,
+      title: key === '\u0000' ? ungroupedLabel : key,
+      rows: bucket,
+    }))
+    .sort((left, right) => {
+      if (left.key === '\u0000') return 1
+      if (right.key === '\u0000') return -1
+      return left.title.localeCompare(right.title)
+    })
+}

@@ -16,6 +16,11 @@ const KNOWN_ERROR_CODES = new Set([
 
 /**
  * Map a failed operation to localized copy.
+ *
+ * `agent-busy` failures are refined using the host diagnostics carried in
+ * `details`: a running agent, or a retained (opened-before, idle) session,
+ * each get their own message that includes the exact session id the host saw.
+ *
  * @param error - thrown value (usually an {@link RpcBusinessError}).
  * @param t - bound dsh-sess translate.
  * @param title - display title of the affected session.
@@ -26,8 +31,28 @@ export function describeFailure(
   title: string,
 ): string {
   if (error instanceof RpcBusinessError && KNOWN_ERROR_CODES.has(error.code)) {
+    if (error.code === 'agent-busy') {
+      const details = error.details as { reason?: string; sessionId?: string }
+      if (details.reason === 'running') {
+        return t('error.running', { title })
+      }
+      return t('error.retained', {
+        title,
+        sessionId: details.sessionId ?? title,
+      })
+    }
     return t(`error.${error.code}`, { title, message: error.message })
   }
   if (error instanceof RpcBusinessError) return error.message
   return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * Localized refusal used before any RPC when the target is the session the
+ * user is currently viewing (the client knows this; the host cannot).
+ * @param t - bound dsh-sess translate.
+ * @param title - display title of the current session.
+ */
+export function currentSessionRefusal(t: Translate, title: string): string {
+  return t('error.current-session', { title })
 }

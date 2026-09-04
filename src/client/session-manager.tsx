@@ -7,10 +7,11 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
-import { describeFailure } from './delete-flow.ts'
+import { describeFailure, currentSessionRefusal } from './delete-flow.ts'
 import {
   archivedRows,
   deriveSessionRows,
+  groupByWorkspace,
   relativeTime,
   type SessionRowView,
 } from './model.ts'
@@ -79,8 +80,17 @@ export function SessionManagerPage({
 
   const titleOf = (row: SessionRowView): string => row.title
 
+  // Group rows by workspace (ungrouped last), rows newest-first inside a group.
+  const groups = groupByWorkspace(visible, t('row.ungrouped'))
+
   const runDelete = async (row: SessionRowView): Promise<void> => {
     if (busyId !== null) return
+    // The currently viewed session cannot be deleted from under the UI.
+    if (ctx.sessions.list.getSnapshot().current === row.sessionId) {
+      setNotice({ kind: 'error', text: currentSessionRefusal(t, titleOf(row)) })
+      setConfirmId(null)
+      return
+    }
     setBusyId(row.sessionId)
     setNotice(null)
     try {
@@ -105,6 +115,87 @@ export function SessionManagerPage({
     setRenameId(null)
     setDraft('')
   }
+
+  /** Render one session row (idle, confirming, or renaming). */
+  const renderRow = (row: SessionRowView) => (
+    <div className="dsh-sess-row" role="listitem" key={row.sessionId}>
+      {renameId === row.sessionId ? (
+        <div className="dsh-sess-row-rename">
+          <Input
+            autoFocus
+            disabled={busy}
+            value={draft}
+            placeholder={t('rename.input.placeholder')}
+            onChange={event => { setDraft(event.currentTarget.value) }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') void saveRename(row)
+              if (event.key === 'Escape') cancelRename()
+            }}
+          />
+          <Button size="sm" variant="primary" disabled={busy} onClick={() => { void saveRename(row) }}>
+            {t('rename.save')}
+          </Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={cancelRename}>
+            {t('rename.cancel')}
+          </Button>
+        </div>
+      ) : confirmId === row.sessionId ? (
+        <div className="dsh-sess-row-confirm">
+          <div className="dsh-sess-row-confirm-title">
+            {t('delete.prompt.title', { title: row.title })}
+          </div>
+          <div className="dsh-sess-row-confirm-note">
+            {t('delete.prompt.warning')} {t('delete.prompt.note')}
+          </div>
+          <div className="dsh-sess-row-confirm-actions">
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => { setConfirmId(null) }}>
+              {t('delete.cancel')}
+            </Button>
+            <Button size="sm" variant="primary" disabled={busy} onClick={() => { void runDelete(row) }}>
+              {busyId === row.sessionId ? t('delete.busyHint') : t('delete.confirm')}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="dsh-sess-row-main">
+            <div className="dsh-sess-row-title" title={row.sessionId}>{row.title}</div>
+            <div className="dsh-sess-row-meta">
+              {row.workspaceTitle !== undefined
+                ? <span className="dsh-sess-row-meta-workspace">{row.workspaceTitle}</span>
+                : <span className="dsh-sess-row-meta-ungrouped">{t('row.ungrouped')}</span>}
+              <span>{relativeTime(row.updatedAt, now, language)}</span>
+              {row.archived && <span>{t('row.archived')}</span>}
+              {row.blank && <span>{t('row.cold')}</span>}
+              {row.running && <span>{t('row.running')}</span>}
+            </div>
+          </div>
+          <div className="dsh-sess-row-actions">
+            {row.archived && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                title={t('row.rename')}
+                onClick={() => { beginRename(row) }}
+              >
+                {t('row.rename')}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || row.running}
+              title={row.running ? t('row.deleteRunningDisabled') : t('row.delete')}
+              onClick={() => { setConfirmId(row.sessionId) }}
+            >
+              {t('row.delete')}
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  )
 
   const saveRename = async (row: SessionRowView): Promise<void> => {
     const title = draft.trim()
@@ -167,83 +258,13 @@ export function SessionManagerPage({
         </div>
       ) : (
         <div className="dsh-sess-manager-list" role="list">
-          {visible.map(row => (
-            <div className="dsh-sess-row" role="listitem" key={row.sessionId}>
-              {renameId === row.sessionId ? (
-                <div className="dsh-sess-row-rename">
-                  <Input
-                    autoFocus
-                    disabled={busy}
-                    value={draft}
-                    placeholder={t('rename.input.placeholder')}
-                    onChange={event => { setDraft(event.currentTarget.value) }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') void saveRename(row)
-                      if (event.key === 'Escape') cancelRename()
-                    }}
-                  />
-                  <Button size="sm" variant="primary" disabled={busy} onClick={() => { void saveRename(row) }}>
-                    {t('rename.save')}
-                  </Button>
-                  <Button size="sm" variant="ghost" disabled={busy} onClick={cancelRename}>
-                    {t('rename.cancel')}
-                  </Button>
-                </div>
-              ) : confirmId === row.sessionId ? (
-                <div className="dsh-sess-row-confirm">
-                  <div className="dsh-sess-row-confirm-title">
-                    {t('delete.prompt.title', { title: row.title })}
-                  </div>
-                  <div className="dsh-sess-row-confirm-note">
-                    {t('delete.prompt.warning')} {t('delete.prompt.note')}
-                  </div>
-                  <div className="dsh-sess-row-confirm-actions">
-                    <Button size="sm" variant="outline" disabled={busy} onClick={() => { setConfirmId(null) }}>
-                      {t('delete.cancel')}
-                    </Button>
-                    <Button size="sm" variant="primary" disabled={busy} onClick={() => { void runDelete(row) }}>
-                      {busyId === row.sessionId ? t('delete.busyHint') : t('delete.confirm')}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="dsh-sess-row-main">
-                    <div className="dsh-sess-row-title" title={row.sessionId}>{row.title}</div>
-                    <div className="dsh-sess-row-meta">
-                      {row.workspaceTitle !== undefined
-                        ? <span className="dsh-sess-row-meta-workspace">{row.workspaceTitle}</span>
-                        : <span className="dsh-sess-row-meta-ungrouped">{t('row.ungrouped')}</span>}
-                      <span>{relativeTime(row.updatedAt, now, language)}</span>
-                      {row.archived && <span>{t('row.archived')}</span>}
-                      {row.blank && <span>{t('row.cold')}</span>}
-                      {row.running && <span>{t('row.running')}</span>}
-                    </div>
-                  </div>
-                  <div className="dsh-sess-row-actions">
-                    {row.archived && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busy}
-                        title={t('row.rename')}
-                        onClick={() => { beginRename(row) }}
-                      >
-                        {t('row.rename')}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy || row.running}
-                      title={row.running ? t('row.deleteRunningDisabled') : t('row.delete')}
-                      onClick={() => { setConfirmId(row.sessionId) }}
-                    >
-                      {t('row.delete')}
-                    </Button>
-                  </div>
-                </>
-              )}
+          {groups.map(group => (
+            <div className="dsh-sess-manager-group" key={group.key}>
+              <div className="dsh-sess-manager-group-header" role="presentation">
+                {group.title}
+                <span className="dsh-sess-manager-group-count">{group.rows.length}</span>
+              </div>
+              {group.rows.map(row => renderRow(row))}
             </div>
           ))}
         </div>
@@ -251,3 +272,4 @@ export function SessionManagerPage({
     </div>
   )
 }
+

@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { describeFailure } from './delete-flow.ts'
+import { currentSessionRefusal, describeFailure } from './delete-flow.ts'
 import { deleteSessionRpc } from './rpc.ts'
 import {
   clearRowDelete,
@@ -47,6 +47,12 @@ export function RowDeleteHost({
     setBusy(true)
     setError(null)
     try {
+      // The currently viewed session cannot be deleted from under the UI.
+      if (ctx.sessions.list.getSnapshot().current === request.sessionId) {
+        setError(currentSessionRefusal(t, request.title))
+        setBusy(false)
+        return
+      }
       await deleteSessionRpc(ctx.connection.rpc, request.sessionId)
       clearRowDelete()
       await ctx.sessions.refresh()

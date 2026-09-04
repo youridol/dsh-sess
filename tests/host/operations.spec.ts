@@ -55,6 +55,8 @@ function header(id: string, cwd: string | undefined = '/workspace'): SessionHead
 function fakeDeleteHost(options: {
   persisted?: SessionHeader[]
   liveIds?: string[]
+  agentIds?: string[]
+  agentStatus?: 'idle' | 'running'
   memberships?: Array<{ workspaceId: string; sessionIds: string[] }>
   locate?: (sessionId: string) => { kind: string; path: string } | undefined
 }): {
@@ -100,6 +102,15 @@ function fakeDeleteHost(options: {
         return entities
       },
     },
+    ...(options.agentIds === undefined ? {} : {
+      agents: {
+        get(id: SessionId) {
+          return options.agentIds?.includes(String(id)) === true
+            ? { status: options.agentStatus ?? 'idle' }
+            : undefined
+        },
+      },
+    }),
   }
   return {
     run: (rawId: unknown) => deleteSession(host, rawId),
@@ -184,6 +195,26 @@ describe('deleteSession', () => {
     const host = fakeDeleteHost({ liveIds: ['session-1'] })
     await expect(host.run('session-1')).rejects.toMatchObject({ code: 'agent-busy' })
     expect(host.detachCalls).toEqual([])
+  })
+
+  it('refuses an agent-retained (idle) session with diagnostics', async () => {
+    const host = fakeDeleteHost({ agentIds: ['session-1'], agentStatus: 'idle' })
+    await expect(host.run('session-1')).rejects.toMatchObject({
+      code: 'agent-busy',
+      details: { sessionId: 'session-1', reason: 'idle' },
+    })
+    expect(host.detachCalls).toEqual([])
+  })
+
+  it('refuses a running session naming the running state', async () => {
+    const host = fakeDeleteHost({ agentIds: ['session-1'], agentStatus: 'running' })
+    try {
+      await host.run('session-1')
+      throw new Error('unreachable')
+    } catch (error) {
+      expect((error as SessionOpError).code).toBe('agent-busy')
+      expect((error as SessionOpError).message).toMatch(/running/)
+    }
   })
 
   it('fails with session-not-found when the session is not persisted', async () => {
