@@ -89,6 +89,8 @@ export interface LocaleFace {
   register(namespace: string, locale: string, dictionary: Record<string, string>): () => void
   bind(namespace: string): (key: string, params?: Record<string, string | number>) => string
   getLocale(): LocaleSnapshotFace
+  /** Subscribe to locale snapshot changes; returns an unsubscribe. */
+  subscribe(listener: () => void): () => void
 }
 
 /** The `slots` service surface dsh-sess reads (register/inject). */

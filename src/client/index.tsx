@@ -18,7 +18,7 @@
 import { createRoot, type Root } from 'react-dom/client'
 import { dictionaries } from './locales.ts'
 import { installRowDeleteMenu } from './row-menu.ts'
-import { requestRowDelete } from './row-store.ts'
+import { requestRowDelete, resetRowDelete } from './row-store.ts'
 import { RowDeleteHost } from './row-delete.tsx'
 import { SessionManagerPage } from './session-manager.tsx'
 import { injectStyles } from './styles.ts'
@@ -76,6 +76,9 @@ export function apply(ctx: DshSessClientContext): void {
       host?.remove()
       host = null
       root = null
+      // Drop any pending delete request and leaked subscribers so a remount
+      // (plugin reload) never resurfaces a stale confirmation dialog.
+      resetRowDelete()
     }
   }, 'dsh-sess: row delete host')
 

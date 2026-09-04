@@ -36,6 +36,16 @@ export function clearRowDelete(): void {
   emit()
 }
 
+/**
+ * Reset the module store: drop any pending request and all subscribers.
+ * Called when the plugin is torn down so a later remount never resurfaces a
+ * stale confirmation or a leaked listener closure.
+ */
+export function resetRowDelete(): void {
+  current = null
+  listeners.clear()
+}
+
 /** Read the current pending request. */
 export function getRowDeleteRequest(): RowDeleteRequest | null {
   return current

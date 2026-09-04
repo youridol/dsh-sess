@@ -7,7 +7,7 @@
  * subagent-child sessions (fork lineage) are excluded — they belong to their
  * parent session and are not independently manageable from this surface.
  */
-import type { SessionListState, WorkspaceListState } from './types.ts'
+import type { SessionListState, WorkspaceListState, WorkspaceViewFace } from './types.ts'
 
 /** One rendered session row in the manager. */
 export interface SessionRowView {
@@ -22,7 +22,9 @@ export interface SessionRowView {
   readonly blank: boolean
   /** Session is in the registry archive set. */
   readonly archived: boolean
-  /** Workspace display title when the session is accounted to one. */
+  /** Owning workspace id when the session is accounted to one. */
+  readonly workspaceId?: string
+  /** Owning workspace display title when the session is accounted to one. */
   readonly workspaceTitle?: string
 }
 
@@ -36,10 +38,13 @@ export function deriveSessionRows(
   sessions: SessionListState,
   workspaces: WorkspaceListState,
 ): SessionRowView[] {
-  const workspaceTitleBySession = new Map<string, string>()
+  // Workspaces are keyed by their stable id; a title is display-only and not
+  // unique, so membership lookup must never collapse two same-titled
+  // workspaces together. One reverse pass builds the session→workspace map.
+  const workspaceBySession = new Map<string, WorkspaceViewFace>()
   for (const workspace of workspaces.items) {
     for (const sessionId of workspace.sessionIds) {
-      workspaceTitleBySession.set(sessionId, workspace.title)
+      workspaceBySession.set(sessionId, workspace)
     }
   }
   const archived = new Set(workspaces.archivedSessionIds)
@@ -49,6 +54,7 @@ export function deriveSessionRows(
     if (summary === undefined) continue
     // Subagent children are managed through their parent session.
     if (summary.parentId !== undefined || summary.origin === 'subagent') continue
+    const owner = workspaceBySession.get(id)
     rows.push({
       sessionId: id,
       title: summary.displayTitle ?? summary.title ?? id,
@@ -56,8 +62,8 @@ export function deriveSessionRows(
       running: summary.running === true,
       blank: summary.blank === true,
       archived: archived.has(id),
-      ...(workspaceTitleBySession.has(id)
-        ? { workspaceTitle: workspaceTitleBySession.get(id) }
+      ...(owner !== undefined
+        ? { workspaceId: owner.workspaceId, workspaceTitle: owner.title }
         : {}),
     })
   }
@@ -87,13 +93,20 @@ export function relativeTime(updatedAt: number, now: number, language: string): 
 
 /** One workspace group of visible rows. */
 export interface SessionGroup {
+  /** Stable group key: owning workspace id, or the ungrouped sentinel. */
   readonly key: string
+  /** Display title: workspace title, or the localized ungrouped label. */
   readonly title: string
   readonly rows: readonly SessionRowView[]
 }
 
+/** Group key for sessions that belong to no workspace. */
+export const UNGROUPED_GROUP_KEY = '\u0000'
+
 /**
  * Group visible rows by workspace; the ungrouped bucket sorts last.
+ * Grouping keys on the stable workspace id so two same-titled workspaces
+ * never merge; the title is display-only.
  * @param rows - rows to group (already activity-sorted within groups).
  * @param ungroupedLabel - localized label for sessions without a workspace.
  */
@@ -103,7 +116,7 @@ export function groupByWorkspace(
 ): SessionGroup[] {
   const buckets = new Map<string, SessionRowView[]>()
   for (const row of rows) {
-    const key = row.workspaceTitle ?? '\u0000'
+    const key = row.workspaceId ?? UNGROUPED_GROUP_KEY
     const bucket = buckets.get(key)
     if (bucket === undefined) buckets.set(key, [row])
     else bucket.push(row)
@@ -111,12 +124,12 @@ export function groupByWorkspace(
   return [...buckets.entries()]
     .map(([key, bucket]) => ({
       key,
-      title: key === '\u0000' ? ungroupedLabel : key,
+      title: key === UNGROUPED_GROUP_KEY ? ungroupedLabel : (bucket[0]?.workspaceTitle ?? key),
       rows: bucket,
     }))
     .sort((left, right) => {
-      if (left.key === '\u0000') return 1
-      if (right.key === '\u0000') return -1
+      if (left.key === UNGROUPED_GROUP_KEY) return 1
+      if (right.key === UNGROUPED_GROUP_KEY) return -1
       return left.title.localeCompare(right.title)
     })
 }

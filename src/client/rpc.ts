@@ -44,10 +44,16 @@ export async function callSessionEndpoint<T>(
   return result.value as T
 }
 
-/** Permanently delete one session; resolves to the deleted session id. */
-export async function deleteSessionRpc(rpc: RpcCaller, sessionId: string): Promise<string> {
-  const value = await callSessionEndpoint<{ deleted: string }>(rpc, Endpoints.deleteSession, { sessionId })
-  return value.deleted
+/** Wire value returned by a successful permanent deletion. */
+export interface DeleteSessionValue {
+  readonly deleted: string
+  /** Diagnostic workspace-accounting refusals that will self-heal. */
+  readonly detachWarnings?: readonly string[]
+}
+
+/** Permanently delete one session; resolves to the deletion result. */
+export async function deleteSessionRpc(rpc: RpcCaller, sessionId: string): Promise<DeleteSessionValue> {
+  return callSessionEndpoint<DeleteSessionValue>(rpc, Endpoints.deleteSession, { sessionId })
 }
 
 /** Rename one session through the host; resolves to the accepted title. */

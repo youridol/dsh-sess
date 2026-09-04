@@ -5,7 +5,7 @@
  * and workspace stores (the same projections the sidebar renders); destructive
  * operations go to the host channel.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import { describeFailure, currentSessionRefusal } from './delete-flow.ts'
 import {
@@ -43,10 +43,15 @@ export function SessionManagerPage({
   const [draft, setDraft] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
-  const language = useMemo(
-    () => (ctx.locale.getLocale()?.active ?? 'en'),
-    [ctx],
-  )
+  // Track the active UI language as state so a live locale switch (zh ↔ en)
+  // re-renders the relative-time labels without reopening the settings page.
+  const [language, setLanguage] = useState(() => ctx.locale.getLocale()?.active ?? 'en')
+
+  // Follow locale snapshot changes (the LocaleFace subscribe pair mirrors the
+  // official store contract); unsubscribe on teardown.
+  useEffect(() => ctx.locale.subscribe(() => {
+    setLanguage(ctx.locale.getLocale()?.active ?? 'en')
+  }), [ctx])
 
   // Re-derive rows whenever either store publishes a new snapshot.
   useEffect(() => {
@@ -94,9 +99,17 @@ export function SessionManagerPage({
     setBusyId(row.sessionId)
     setNotice(null)
     try {
-      await deleteSessionRpc(ctx.connection.rpc, row.sessionId)
+      const result = await deleteSessionRpc(ctx.connection.rpc, row.sessionId)
       setConfirmId(null)
-      setNotice({ kind: 'ok', text: t('status.deletedOk', { title: titleOf(row) }) })
+      const hasWarnings = result.detachWarnings !== undefined && result.detachWarnings.length > 0
+      // Deletion itself succeeded; warnings only mean workspace accounting
+      // will self-heal on the registry's next write.
+      setNotice({
+        kind: 'ok',
+        text: hasWarnings
+          ? t('status.deletedWithWarnings', { title: titleOf(row) })
+          : t('status.deletedOk', { title: titleOf(row) }),
+      })
       await ctx.sessions.refresh()
     } catch (error) {
       setNotice({ kind: 'error', text: describeFailure(error, t, titleOf(row)) })

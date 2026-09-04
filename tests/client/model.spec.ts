@@ -73,6 +73,7 @@ describe('deriveSessionRows', () => {
     const rows = deriveSessionRows(sessions, workspaces)
     expect(rows.map(row => row.sessionId)).toEqual(['session-b', 'session-a'])
     const a = rows[1] as NonNullable<typeof rows[1]>
+    expect(a.workspaceId).toBe('ws-1')
     expect(a.workspaceTitle).toBe('Project One')
     expect(a.archived).toBe(false)
     expect(rows[0]?.archived).toBe(true)
@@ -117,7 +118,7 @@ describe('archivedRows', () => {
   })
 })
 
-function groupingRow(id: string, workspaceTitle?: string) {
+function groupingRow(id: string, workspaceId?: string, workspaceTitle?: string) {
   return {
     sessionId: id,
     title: id,
@@ -125,14 +126,20 @@ function groupingRow(id: string, workspaceTitle?: string) {
     running: false,
     blank: false,
     archived: false,
+    ...(workspaceId === undefined ? {} : { workspaceId }),
     ...(workspaceTitle === undefined ? {} : { workspaceTitle }),
   }
 }
 
 describe('groupByWorkspace', () => {
-  it('groups by workspace with ungrouped last and alphabetical group order', () => {
+  it('groups by workspace id with ungrouped last and alphabetical group order', () => {
     const groups = groupByWorkspace(
-      [groupingRow('b', 'Beta'), groupingRow('u'), groupingRow('a', 'Alpha'), groupingRow('u2')],
+      [
+        groupingRow('b', 'ws-2', 'Beta'),
+        groupingRow('u'),
+        groupingRow('a', 'ws-1', 'Alpha'),
+        groupingRow('u2'),
+      ],
       '未分组',
     )
     expect(groups.map(g => g.title)).toEqual(['Alpha', 'Beta', '未分组'])
@@ -140,9 +147,23 @@ describe('groupByWorkspace', () => {
     expect(groups[2]?.rows.map(r => r.sessionId)).toEqual(['u', 'u2'])
   })
 
+  it('keeps two same-titled workspaces in separate groups', () => {
+    const groups = groupByWorkspace(
+      [
+        groupingRow('s1', 'ws-1', 'Shared'),
+        groupingRow('s2', 'ws-2', 'Shared'),
+      ],
+      'ungrouped',
+    )
+    expect(groups).toHaveLength(2)
+    expect(groups[0]?.rows.map(r => r.sessionId)).toEqual(['s1'])
+    expect(groups[1]?.rows.map(r => r.sessionId)).toEqual(['s2'])
+    expect(groups.every(group => group.rows.length === 1)).toBe(true)
+  })
+
   it('preserves row order inside each group', () => {
     const groups = groupByWorkspace(
-      [groupingRow('s1', 'W'), groupingRow('s2', 'W'), groupingRow('s3')],
+      [groupingRow('s1', 'ws-1', 'W'), groupingRow('s2', 'ws-1', 'W'), groupingRow('s3')],
       'ungrouped',
     )
     expect(groups[0]?.rows.map(r => r.sessionId)).toEqual(['s1', 's2'])

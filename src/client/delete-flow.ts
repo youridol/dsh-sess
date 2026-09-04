@@ -32,14 +32,19 @@ export function describeFailure(
 ): string {
   if (error instanceof RpcBusinessError && KNOWN_ERROR_CODES.has(error.code)) {
     if (error.code === 'agent-busy') {
-      const details = error.details as { reason?: string; sessionId?: string }
+      const details = error.details as { reason?: string; sessionId?: string; retained?: string }
       if (details.reason === 'running') {
         return t('error.running', { title })
       }
-      return t('error.retained', {
-        title,
-        sessionId: details.sessionId ?? title,
-      })
+      if (details.reason === 'idle' || details.retained === 'session') {
+        return t('error.retained', {
+          title,
+          sessionId: details.sessionId ?? title,
+        })
+      }
+      // Unknown refusal reason: fall back to the generic in-process copy so a
+      // future host diagnostic never regresses to a raw message.
+      return t('error.agent-busy', { title })
     }
     return t(`error.${error.code}`, { title, message: error.message })
   }

@@ -1,6 +1,6 @@
 {
   "name": "dsh-sess",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Session manager for DeepSeek Harness (DSH): permanently delete cold sessions and manage archived sessions (list / rename / delete) through a native web UI. Built strictly on the official dsh-v0.1.2-alpha.5 API, Profile Bundle and Cordis mechanisms. · DeepSeek Harness 会话管理插件：冷会话永久删除、归档会话管理（列表 / 重命名 / 删除），原生 Web UI，严格基于 dsh-v0.1.2-alpha.5 官方 API、Profile Bundle 与 Cordis。",
   "type": "module",
   "main": "lib/index.js",
@@ -30,8 +30,8 @@
   },
   "files": [
     "lib",
-    "client",
-    "src",
+    "client/client.js",
+    "client/client.js.map",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",

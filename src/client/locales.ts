@@ -25,8 +25,6 @@ const zh = {
   'row.ungrouped': '未分组',
   'row.delete': '删除会话',
   'row.rename': '重命名',
-  'row.renaming': '重命名…',
-  'row.deleting': '删除中…',
   'row.deleteRunningDisabled': '会话正在运行，请等待完成后再删除。',
 
   'delete.prompt.title': '确认删除「{title}」？',
@@ -41,6 +39,7 @@ const zh = {
   'rename.cancel': '取消',
 
   'status.deletedOk': '已删除会话「{title}」。',
+  'status.deletedWithWarnings': '已删除会话「{title}」，但部分工作区记账未解除，将在下次工作区写入时自动收敛。',
   'status.renamedOk': '已重命名为「{title}」。',
 
   'error.agent-busy': '会话「{title}」仍在本进程打开，暂不能删除。请关闭该会话或重启 dsh（重启后所有会话变为冷会话）再删除。',
@@ -76,8 +75,6 @@ const en: Record<DshSessKey, string> = {
   'row.ungrouped': 'Ungrouped',
   'row.delete': 'Delete session',
   'row.rename': 'Rename',
-  'row.renaming': 'Renaming…',
-  'row.deleting': 'Deleting…',
   'row.deleteRunningDisabled': 'This session is running; wait for it to finish before deleting.',
 
   'delete.prompt.title': 'Delete "{title}"?',
@@ -92,6 +89,7 @@ const en: Record<DshSessKey, string> = {
   'rename.cancel': 'Cancel',
 
   'status.deletedOk': 'Deleted session "{title}".',
+  'status.deletedWithWarnings': 'Deleted session "{title}", but some workspace accounting could not be released; it will self-heal on the next workspace write.',
   'status.renamedOk': 'Renamed to "{title}".',
 
   'error.agent-busy': 'Session "{title}" is still open in this process and cannot be deleted. Close it or restart DSH (which makes every session cold) and try again.',

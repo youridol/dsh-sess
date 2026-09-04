@@ -3,6 +3,55 @@
 All notable changes to **dsh-sess** are documented here, in English. 简体中文
 版本见 [CHANGELOG.zh.md](CHANGELOG.zh.md).
 
+## [0.2.1] - 2026-09-04
+
+**Post-audit robustness and tidiness fixes (PATCH).**
+
+### Fixed
+
+- **Deletion no longer reports failure when accounting release fails.**
+  `dshSess.deleteSession` downgrades a `detachSession` rejection (a very
+  unlikely domain-write fault) after the durable artifact is gone to a
+  `detachWarnings` diagnostic instead of failing the whole operation; the UI
+  reports "deleted, accounting will self-heal" (the official registry prunes
+  stale members on its next domain write). Host tests cover the detach-failure
+  path.
+- **Row-menu confirmation subscriptions and state no longer leak.**
+  `RowDeleteHost`'s store subscription now unsubscribes on unmount; plugin
+  teardown calls a new `resetRowDelete()` that clears the module-level pending
+  request and subscribers, so a hot reload never resurfaces a stale
+  confirmation or leaks listeners.
+- **Relative-time labels follow live locale switches.** The manager's activity
+  time ("x minutes ago") no longer caches the first-render language; it now
+  subscribes to locale snapshot changes and re-renders immediately on zh/en
+  switch.
+- **Rename budget is delegated to the official service.** The local 512
+  character pre-check was removed — its unit disagreed with the official
+  deployment-configured UTF-8 byte cap and could reject titles the deployment
+  accepts. Validation now relies entirely on the official normalization and
+  `session/title-invalid` mapping (unchanged).
+
+### Changed
+
+- **Sessions group by workspace id, not title.** The group key is the stable
+  workspace id with the title as display text, so two same-titled workspaces no
+  longer merge into one group.
+- **Delete-failure copy gains a fallback branch.** `agent-busy` refusals now
+  have a generic in-process fallback beyond the existing `running`/`retained`
+  distinctions, so a future host reason never degrades to a raw message.
+- **Dead copy removed.** The never-referenced `row.renaming` and `row.deleting`
+  dictionary keys were dropped.
+- **npm package slimmed.** The `files` allowlist now ships only `lib/`,
+  `client/client.js(.map)` and docs — no whole-directory source or debug
+  artifacts.
+
+### Docs
+
+- Fixed the self-contradictory "no DOM injection" wording in the 0.2.0 entry:
+  the Settings section registers through the official slot system, while the
+  sidebar session-row menu is a defensive DOM-level extension (matching the
+  README and architecture docs).
+
 ## [0.2.0] - 2026-08-29
 
 **Independent-repository rewrite for dsh-v0.1.2-alpha.5.**
@@ -23,8 +72,9 @@ dsh-v0.1.2-alpha.5 official API, Profile Bundle and Cordis mechanisms.
   domain state is ever written.
 - **Browser half** (`src/client/*`): a module-table-compliant bundle that
   registers a native **Session Manager** Settings section through the official
-  client slots system (`settings.section`) and locale services. No DOM
-  injection, no private client APIs.
+  client slots system (`settings.section`) and locale services; the sidebar
+  session-row "Delete session" entry is a defensive DOM-level extension (the
+  native menu exposes no third-party slot).
 - **Data flows from the official client projections.** The manager renders the
   same session/workspace projections the sidebar uses (titles, activity time,
   workspace membership, archive set), so displayed metadata matches native UI.

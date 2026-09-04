@@ -90,6 +90,8 @@ export function RowDeleteHost({
 /** Subscribe to the module-level delete request store. */
 function useRowDeleteRequest(): ReturnType<typeof getRowDeleteRequest> {
   const [request, setRequest] = useState(getRowDeleteRequest)
+  // Return the unsubscribe so a plugin teardown (root unmount) never leaks
+  // this listener into the module-level set.
   useEffect(() => subscribeRowDelete(() => { setRequest(getRowDeleteRequest()) }), [])
   return request
 }

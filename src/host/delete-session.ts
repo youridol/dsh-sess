@@ -73,6 +73,13 @@ export interface DeleteSessionHost {
 /** Result of a successful deletion. */
 export interface DeleteSessionResult {
   readonly deleted: SessionId
+  /**
+   * Workspace memberships whose accounting could not be released. The durable
+   * artifact is already gone; a listed workspace row that still names the
+   * session is self-healed by the official registry's next domain write, so
+   * this is diagnostic rather than fatal.
+   */
+  readonly detachWarnings?: readonly string[]
 }
 
 /**
@@ -134,12 +141,24 @@ export async function deleteSession(
     )
   }
 
-  // 4) Release workspace accounting through the official detach API.
+  // 4) Release workspace accounting through the official detach API. The
+  // durable artifact is already gone, so a failed detach must not fail the
+  // whole deletion: the official registry write is idempotent and prunes
+  // no-longer-valid members on its next domain write, so the leftover row
+  // self-heals. Collect any refusal as a diagnostic warning instead.
+  const detachWarnings: string[] = []
   for (const entity of host.workspaceRegistry.list()) {
     if (entity.sessionIds.some(id => String(id) === String(sessionId))) {
-      await entity.detachSession(sessionId)
+      try {
+        await entity.detachSession(sessionId)
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error)
+        detachWarnings.push(
+          `workspace accounting for "${String(sessionId)}" could not be released and will self-heal: ${detail}`,
+        )
+      }
     }
   }
 
-  return { deleted: sessionId }
+  return detachWarnings.length > 0 ? { deleted: sessionId, detachWarnings } : { deleted: sessionId }
 }

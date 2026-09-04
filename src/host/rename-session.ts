@@ -27,9 +27,6 @@ export interface RenameSessionResult {
   readonly title: string
 }
 
-/** Upper bound applied before delegating to the official validation. */
-export const MAX_TITLE_LENGTH = 512
-
 /**
  * Rename one (optionally archived/cold) session through the official
  * controller.
@@ -60,13 +57,11 @@ export async function renameSession(
   if (title.length === 0) {
     throw new SessionOpError('bad-request', 'session title must not be empty', { sessionId: String(sessionId) })
   }
-  if (title.length > MAX_TITLE_LENGTH) {
-    throw new SessionOpError(
-      'bad-request',
-      `session title must be at most ${MAX_TITLE_LENGTH} characters`,
-      { sessionId: String(sessionId) },
-    )
-  }
+  // No local length pre-check: the official session-title service owns the
+  // accepted-title budget (a deployment-configured UTF-8 byte cap). Enforcing a
+  // character count here could reject titles the deployment accepts or admit
+  // titles it rejects; the official `session/title-invalid` mapping below is
+  // the single source of truth for the limit.
   try {
     const accepted = await controller.rename({ sessionId, title })
     return { title: accepted.title }

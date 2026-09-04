@@ -103,7 +103,9 @@ export function createChannelHandler(host: SessHost) {
       case Endpoints.deleteSession: {
         try {
           const result = await deleteSession(host, stringField(payload, 'sessionId'))
-          return ok({ deleted: String(result.deleted) })
+          return ok(result.detachWarnings !== undefined
+            ? { deleted: String(result.deleted), detachWarnings: result.detachWarnings }
+            : { deleted: String(result.deleted) })
         } catch (error) {
           return fail(toSessionOpError(error))
         }

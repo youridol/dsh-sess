@@ -59,8 +59,10 @@ function fakeDeleteHost(options: {
   agentStatus?: 'idle' | 'running'
   memberships?: Array<{ workspaceId: string; sessionIds: string[] }>
   locate?: (sessionId: string) => { kind: string; path: string } | undefined
+  /** Workspace ids whose detachSession should reject (A4 best-effort path). */
+  failDetachFor?: string[]
 }): {
-  run: (rawId: unknown) => Promise<{ deleted: SessionId }>
+  run: (rawId: unknown) => Promise<{ deleted: SessionId; detachWarnings?: readonly string[] }>
   detachCalls: Array<{ workspaceId: string; sessionId: string }>
 } {
   const memberships = (options.memberships ?? []).map(membership => ({
@@ -68,15 +70,19 @@ function fakeDeleteHost(options: {
     sessionIds: [...membership.sessionIds],
   }))
   const detachCalls: Array<{ workspaceId: string; sessionId: string }> = []
+  const failDetachFor = new Set(options.failDetachFor ?? [])
   const entities = memberships.map(membership => ({
     workspaceId: membership.workspaceId,
     get sessionIds(): readonly SessionId[] {
       return membership.sessionIds as SessionId[]
     },
     async detachSession(sessionId: SessionId): Promise<void> {
+      detachCalls.push({ workspaceId: membership.workspaceId, sessionId: String(sessionId) })
+      if (failDetachFor.has(membership.workspaceId)) {
+        throw new Error(`detach refused for ${membership.workspaceId}`)
+      }
       const index = membership.sessionIds.indexOf(String(sessionId))
       if (index !== -1) membership.sessionIds.splice(index, 1)
-      detachCalls.push({ workspaceId: membership.workspaceId, sessionId: String(sessionId) })
     },
   }))
   const host = {
@@ -272,6 +278,45 @@ describe('deleteSession', () => {
   it('rejects malformed session ids before touching services', async () => {
     const host = fakeDeleteHost({})
     await expect(host.run('not/valid')).rejects.toMatchObject({ code: 'bad-request' })
+  })
+
+  it('still deletes and reports a warning when a workspace detach fails', async () => {
+    const root = await tempRoot()
+    const persisted = [header('session-1')]
+    await writeArtifact(root, '--project--', 'session-1')
+    const host = fakeDeleteHost({
+      persisted,
+      locate: id => ({ kind: 'jsonl', path: join(root, '--project--', id, 'session.jsonl.zstd') }),
+      memberships: [
+        { workspaceId: 'ws-1', sessionIds: ['session-1'] },
+        { workspaceId: 'ws-2', sessionIds: ['session-1'] },
+      ],
+      failDetachFor: ['ws-2'],
+    })
+
+    const result = await host.run('session-1')
+    expect(result.deleted).toBe('session-1')
+    expect(result.detachWarnings).toBeDefined()
+    expect(result.detachWarnings?.length).toBe(1)
+    expect(result.detachWarnings?.[0]).toMatch(/ws-2|self-heal/)
+    // The healthy workspace was still detached.
+    expect(host.detachCalls).toEqual([
+      { workspaceId: 'ws-1', sessionId: 'session-1' },
+      { workspaceId: 'ws-2', sessionId: 'session-1' },
+    ])
+    await expect(readdir(join(root, '--project--'))).resolves.toEqual([])
+  })
+
+  it('omits detachWarnings when every workspace detach succeeds', async () => {
+    const root = await tempRoot()
+    const persisted = [header('session-1')]
+    await writeArtifact(root, '--project--', 'session-1')
+    const host = fakeDeleteHost({
+      persisted,
+      locate: id => ({ kind: 'jsonl', path: join(root, '--project--', id, 'session.jsonl.zstd') }),
+      memberships: [{ workspaceId: 'ws-1', sessionIds: ['session-1'] }],
+    })
+    await expect(host.run('session-1')).resolves.toEqual({ deleted: 'session-1' })
   })
 })
 
